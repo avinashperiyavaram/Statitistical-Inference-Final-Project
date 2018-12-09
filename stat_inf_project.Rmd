@@ -1,0 +1,127 @@
+---
+title: "Statistical inference with the GSS data"
+author: "Avinash Reddy Periyavaram"
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+```
+
+### Load data
+
+Make sure your data and R Markdown files are in the same directory. When loaded
+your data file will be called `gss`. Delete this note when before you submit 
+your work. 
+
+```{r load-data}
+load("_5db435f06000e694f6050a2d43fc7be3_gss.Rdata")
+```
+
+
+
+* * *
+
+## Part 1: Data
+
+The GSS data consists of survey data with many atributes. The surveys are conducted between the years 1972 and 2012. The dataset is made of 57061 observations and 114 variables. Each Variable represents a question in the survey. The data is very likely for making a perfect statistical inference as the respondents are randomly choosen. The sample is more than 30 and less than 10% of the population.
+
+* * *
+
+## Part 2: Research question
+
+As the data has multiple comparisions, many questions can be statistically answered using the data. I am excited to find the entrepreneurship gap between the genders as I am enthusiastic man intrested in entrepreneurship. I am going to compare the the proportion of men and women, who are self-employed and make a statistical inference. 
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+NOTE: Insert code chunks as needed by clicking on the "Insert a new code chunk" 
+button (green button with orange arrow) above. Make sure that your code is visible
+in the project you submit. Delete this note when before you submit your work.
+
+The Attributes/Variables used in the research are 
+1. Year
+2. Sex
+3. Wrkslf
+
+First of all I would like remove all the null values.
+```{r}
+gss %>%
+  filter(!is.na(sex) & !is.na(wrkslf) & !is.na(year)) %>%
+  select(sex,wrkslf,year) -> gss_entrepreneur
+
+dim(gss_entrepreneur)
+```
+
+
+The below plots the propotionality curve of men and women who are self employed. 
+```{r}
+gss_entrepreneur %>%
+  group_by(sex,year) %>%
+  summarise(prop = sum(wrkslf == "Self-Employed")/n()) -> gss_entpren_prop
+
+ggplot(data=gss_entpren_prop, aes(x=year,y=prop)) + geom_smooth(aes(fill=sex))
+```
+
+Observations / Results
+
+1. The men proportion is way bigger than women.
+2. As the years passed, the mens proportion is falling down more than women.
+3. Overall proportionallity of the entrepenurs has gone down in 20th century.
+
+* * *
+
+## Part 4: Inference
+
+NOTE: Insert code chunks as needed by clicking on the "Insert a new code chunk" 
+button (green button with orange arrow) above. Make sure that your code is visible
+in the project you submit. Delete this note when before you submit your work.
+
+1. State Hypothesis
+
+Null Hypothesis (H0) : The mean proportions of self-employed (entrepenurs) men and women is equal to zero. i.e. The mean proportion of self-employed men is equal to the mean proportion of self-employed women.
+
+Alternative Hypothesis (Ha) : The mean proportions of self-employed (entrepenurs) men and women is greater than zero. i.e. The mean proportion of self-employed men is greater than the mean proportion of self-employed women.
+
+2. Check Conditions
+
+Condition 1 - Indpendence : As people setected for taking the survey are random, the observations can be considered as independent
+
+Consition 2 - Sample Size :
+
+Pooled Proportion (total number of self-employed / total observation) - 
+```{r}
+gss_entrepreneur %>%
+  summarise(p_pool = sum(wrkslf=="Self-Employed")/n(), 
+            n_1 = sum(sex == "Female"),
+            n_2 = sum(sex == "Male"),
+            n_1_success = p_pool*n_1,
+            n_1_fails = (1-p_pool)*n_1,
+            n_2_success = p_pool*n_2,
+            n_2_fails = (1-p_pool)*n_2,
+            SE = sqrt((p_pool*(1 - p_pool)/n_1) + (p_pool*(1 - p_pool)/n_2)))
+```
+
+From the above calculated data the minimum samplesize criteria is met, and the distribution of the sample proportion is expected to be nearly normal and centered at the new proportion mean.
+
+3. Methods to be used -
+
+I would like to perform t-test as we dont have the S.D of the distributions
+
+4. Perform inference - Independent sample test : t-test
+
+```{r}
+inference(y = wrkslf, x = sex, data = gss_entrepreneur, statistic = "proportion", type = "ht", null = 0, success="Self-Employed", alternative ="greater", method = "theoretical")
+```
+
+From the above analysis, the p-value is 0.0001, which is way lesser than level of significance α. Hence the null hypothesis is rejected.
+
+5. Results -
+
+Inititally, when the proportions are plotted, it is clearly seen that the proportion of men entrepreneurs is more than women entrepeneurs. But for a strong evedinece a statistical test is performed. In the statistical test the smaller P-Value rejected the null hypothesis, which means that our Alternative hypothesis "The mean proportions of self-employed (entrepenurs) men and women is greater than zero. i.e. The mean proportion of self-employed men is greater than the mean proportion of self-employed women." is true.
